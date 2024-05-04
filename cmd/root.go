@@ -23,16 +23,32 @@ package cmd
 
 import (
 	"log"
+	"net/http"
 
+	"github.com/a-h/templ"
+	"github.com/ditwrd/wedinv/template"
+	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 )
+
+func Render(ctx echo.Context, statusCode int, t templ.Component) error {
+	ctx.Response().Writer.WriteHeader(statusCode)
+	ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
+	return t.Render(ctx.Request().Context(), ctx.Response().Writer)
+}
 
 func Execute() {
 	pb := pocketbase.New()
 
 	pb.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		SetupRouter(e)
+		e.Router.Static("/public", "public")
+
+		appGroup := e.Router.Group("/inv")
+		appGroup.GET("/:invitationID", func(c echo.Context) error {
+			invitationID := c.PathParam("invitationID")
+			return Render(c, http.StatusOK, template.Home(invitationID))
+		})
 		return nil
 	})
 

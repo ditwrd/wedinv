@@ -1,0 +1,16 @@
+package template
+
+templ Index(invitationID string) {
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+			<meta name="viewport" content="width=device-width"/>
+			<script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
+			<title>Wedding Invitation</title>
+		</head>
+		<body>
+			Hello { invitationID }
+		</body>
+	</html>
+}
