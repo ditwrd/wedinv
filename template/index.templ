@@ -1,6 +1,11 @@
 package template
 
-templ Index(invitationID string) {
+import (
+"github.com/ditwrd/wedinv/internal/models"
+"strconv"
+)
+
+templ Index(invitee models.Invitee) {
 	<html lang="en">
 		<head>
 			<meta charset="utf-8"/>
@@ -10,7 +15,58 @@ templ Index(invitationID string) {
 			<title>Wedding Invitation</title>
 		</head>
 		<body>
-			Hello { invitationID }
+			<div>
+				Phone 	{ strconv.Itoa(invitee.Phone) }
+			</div>
+			@InviteeInfo(invitee.ID, invitee.Name, invitee.InvitedBy)
+			<div id="accept_status">
+				@StatusCheck(invitee.Status)
+			</div>
+			@Button(invitee.ID, invitee.Status)
 		</body>
 	</html>
+}
+
+templ InviteeInfo(invitationID string, inviteeName string, invitedBy string) {
+	<div>
+		Hello { inviteeName } - { invitationID } you are invited by { invitedBy }
+	</div>
+}
+
+templ Button(invitationID string, inviteeStatus string) {
+	<div>
+		<button
+			hx-get={ "/inv/" + invitationID + "/accept" }
+			hx-target="#accept_status"
+			if inviteeStatus=="accepted" {
+				disabled
+			}
+		>
+			Accept
+		</button>
+		<button
+			hx-get={ "/inv/" + invitationID + "/decline" }
+			hx-target="#accept_status"
+			if inviteeStatus=="declined" {
+				disabled
+			}
+			if inviteeStatus=="accepted" {
+				hx-confirm="You've accepted the invitation before, are you sure you want to decline now?"
+			}
+			
+		>
+			Decline
+		</button>
+	</div>
+}
+
+templ StatusCheck(status string) {
+	switch status {
+		case "waiting":
+			You haven't confirm this invitation
+		case "accepted":
+			You accepted the invitation
+		case "declined":
+			You declined the invitation
+	}
 }

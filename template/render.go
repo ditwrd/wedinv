@@ -19,46 +19,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-package cmd
+package template
 
 import (
-	"log"
-	"net/http"
-
-	"github.com/ditwrd/wedinv/internal/lib/invitee"
+	"github.com/a-h/templ"
 	"github.com/labstack/echo/v5"
-	"github.com/pocketbase/pocketbase"
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 )
 
-func Execute() {
-	pb := pocketbase.New()
-
-	migratecmd.MustRegister(pb, pb.RootCmd, migratecmd.Config{
-		Automigrate: true,
-	})
-
-	pb.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.Static("/public", "public")
-		e.Router.GET("/missing", func(c echo.Context) error {
-			c.HTML(404, "You shouldn't be here")
-			return nil
-		})
-		e.Router.RouteNotFound("/*", func(c echo.Context) error {
-			c.Redirect(http.StatusTemporaryRedirect, "/missing")
-			return nil
-		})
-
-		baseRouter := e.Router.Group("/inv")
-		baseRouter.GET("/:invitationID", invitee.FindInvitation(pb))
-		baseRouter.GET("/:invitationID/accept", invitee.AcceptInvitation(pb))
-		baseRouter.GET("/:invitationID/decline", invitee.DeclineInvitation(pb))
-
-		return nil
-	})
-
-	if err := pb.Start(); err != nil {
-		log.Fatal(err)
-	}
+func Render(ctx echo.Context, statusCode int, t templ.Component) error {
+	ctx.Response().Writer.WriteHeader(statusCode)
+	ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
+	return t.Render(ctx.Request().Context(), ctx.Response().Writer)
 }
