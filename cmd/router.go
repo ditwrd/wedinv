@@ -21,22 +21,8 @@ THE SOFTWARE.
 */
 package cmd
 
-import (
-	"log"
+import "github.com/pocketbase/pocketbase/core"
 
-	"github.com/pocketbase/pocketbase"
-	"github.com/pocketbase/pocketbase/core"
-)
-
-func Execute() {
-	pb := pocketbase.New()
-
-	pb.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		SetupRouter(e)
-		return nil
-	})
-
-	if err := pb.Start(); err != nil {
-		log.Fatal(err)
-	}
+func SetupRouter(e *core.ServeEvent) {
+	e.Router.Static("/public", "public")
 }
