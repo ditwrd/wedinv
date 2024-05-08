@@ -2,15 +2,17 @@ package template
 
 import (
 	"github.com/ditwrd/wedinv/internal/models"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 templ header() {
 	<head>
 		<title>WedInv</title>
 		<meta charset="utf-8"/>
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-		<meta name="viewport" content="width=device-width"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1"/>
 		<script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" integrity="sha384-7P0NVe9LPDbUCAF+fH2R8Egwz1uqNH83Ns/bfJY0fN2XCDBMUI2S9gGzIOIRBKsA" crossorigin="anonymous"/>
 		<link rel="stylesheet" href="/public/styles.css"/>
 	</head>
@@ -21,9 +23,15 @@ templ Index(invitee models.Invitee) {
 		@header()
 		<body>
 			<main class="container">
-				@InviteeWelcome(invitee.Name, invitee.Status, invitee.InvitedBy)
-				@Invitation()
-				@StatusResponseBox(invitee.Status, invitee.ID)
+				<section>
+					@InviteeWelcome(invitee.Name, invitee.Status, invitee.InvitedBy)
+				</section>
+				<section>
+					@Invitation()
+				</section>
+				<section id="response">
+					@StatusResponseBox(invitee.Status, invitee.ID)
+				</section>
 			</main>
 		</body>
 	</html>
@@ -31,33 +39,48 @@ templ Index(invitee models.Invitee) {
 
 templ InviteeWelcome(inviteeName string, status string, invitedBy string) {
 	<h1>
-		Hello { inviteeName }, you are invited by { invitedBy }
+		Wedding Invitation
 	</h1>
+	<p>
+		Hello { inviteeName }, you are invited by { invitedBy }
+	</p>
 }
 
 templ Invitation() {
-	<div>This is the invitation</div>
+	<h2>
+		Invitation Box
+	</h2>
+	<p>
+		This is the invitation
+	</p>
 }
 
 templ StatusResponseBox(inviteeStatus string, inviteeID string) {
-	<div id="responseBox">
-		<div>
-			{ inviteeStatus }
-		</div>
-		<div class="grid">
-			@ResponseButton(inviteeID, "accept", inviteeStatus == "accepted")
-			@ResponseButton(inviteeID, "decline", inviteeStatus == "declined")
-		</div>
+	<h2>Response Box</h2>
+	<b>
+		if inviteeStatus=="waiting" {
+			You haven't response to this invitation, please fill it soon!
+		}
+		if inviteeStatus=="accepted" {
+			You've accepted this invitation, see you soon!
+		}
+		if inviteeStatus=="declined" {
+			You've declined this invitation, we hope we can see you soon!
+		}
+	</b>
+	<div class="grid">
+		@ResponseButton(inviteeID, "accept", inviteeStatus == "accepted")
+		@ResponseButton(inviteeID, "decline", inviteeStatus == "declined")
 	</div>
 }
 
 templ ResponseButton(inviteeID string, response string, disable bool) {
 	<button
 		hx-put={ "/inv/" + inviteeID + "/" + response }
-		hx-target="#responseBox"
+		hx-target="#response"
 		if disable {
 			disabled
 		}
 		hx-confirm="Are you sure?"
-	>{ response }</button>
+	>{ cases.Title(language.English, cases.Compact).String(response) }</button>
 }
