@@ -26,6 +26,7 @@ import (
 	"net/http"
 
 	"github.com/ditwrd/wedinv/internal/services"
+	_ "github.com/ditwrd/wedinv/migrations"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
@@ -37,6 +38,7 @@ func Execute() {
 
 	migratecmd.MustRegister(pb, pb.RootCmd, migratecmd.Config{
 		Automigrate: true,
+		Dir:         "/migrations",
 	})
 
 	pb.OnBeforeServe().Add(func(e *core.ServeEvent) error {
