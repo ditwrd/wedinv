@@ -25,7 +25,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/ditwrd/wedinv/internal/lib/invitee"
+	"github.com/ditwrd/wedinv/internal/services"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
@@ -41,7 +41,7 @@ func Execute() {
 
 	pb.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		e.Router.Static("/public", "public")
-		e.Router.GET("/missing", func(c echo.Context) error {
+		e.Router.GET("/notfound", func(c echo.Context) error {
 			c.HTML(404, "You shouldn't be here")
 			return nil
 		})
@@ -50,10 +50,12 @@ func Execute() {
 			return nil
 		})
 
+		inviteeService := services.NewInviteeService(pb.Dao())
+
 		baseRouter := e.Router.Group("/inv")
-		baseRouter.GET("/:invitationID", invitee.FindInvitation(pb))
-		baseRouter.GET("/:invitationID/accept", invitee.AcceptInvitation(pb))
-		baseRouter.GET("/:invitationID/decline", invitee.DeclineInvitation(pb))
+		baseRouter.GET("/:invitationID", inviteeService.FindInvitation)
+		baseRouter.PUT("/:invitationID/accept", inviteeService.AcceptInvitation)
+		baseRouter.PUT("/:invitationID/decline", inviteeService.DeclineInvitation)
 
 		return nil
 	})

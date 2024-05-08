@@ -1,72 +1,63 @@
 package template
 
 import (
-"github.com/ditwrd/wedinv/internal/models"
-"strconv"
+	"github.com/ditwrd/wedinv/internal/models"
 )
+
+templ header() {
+	<head>
+		<title>WedInv</title>
+		<meta charset="utf-8"/>
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+		<meta name="viewport" content="width=device-width"/>
+		<script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" integrity="sha384-7P0NVe9LPDbUCAF+fH2R8Egwz1uqNH83Ns/bfJY0fN2XCDBMUI2S9gGzIOIRBKsA" crossorigin="anonymous"/>
+		<link rel="stylesheet" href="/public/styles.css"/>
+	</head>
+}
 
 templ Index(invitee models.Invitee) {
 	<html lang="en">
-		<head>
-			<meta charset="utf-8"/>
-			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-			<meta name="viewport" content="width=device-width"/>
-			<script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
-			<title>Wedding Invitation</title>
-		</head>
+		@header()
 		<body>
-			<div>
-				Phone 	{ strconv.Itoa(invitee.Phone) }
-			</div>
-			@InviteeInfo(invitee.ID, invitee.Name, invitee.InvitedBy)
-			<div id="accept_status">
-				@StatusCheck(invitee.Status)
-			</div>
-			@Button(invitee.ID, invitee.Status)
+			<main class="container">
+				@InviteeWelcome(invitee.Name, invitee.Status, invitee.InvitedBy)
+				@Invitation()
+				@StatusResponseBox(invitee.Status, invitee.ID)
+			</main>
 		</body>
 	</html>
 }
 
-templ InviteeInfo(invitationID string, inviteeName string, invitedBy string) {
-	<div>
-		Hello { inviteeName } - { invitationID } you are invited by { invitedBy }
+templ InviteeWelcome(inviteeName string, status string, invitedBy string) {
+	<h1>
+		Hello { inviteeName }, you are invited by { invitedBy }
+	</h1>
+}
+
+templ Invitation() {
+	<div>This is the invitation</div>
+}
+
+templ StatusResponseBox(inviteeStatus string, inviteeID string) {
+	<div id="responseBox">
+		<div>
+			{ inviteeStatus }
+		</div>
+		<div class="grid">
+			@ResponseButton(inviteeID, "accept", inviteeStatus == "accepted")
+			@ResponseButton(inviteeID, "decline", inviteeStatus == "declined")
+		</div>
 	</div>
 }
 
-templ Button(invitationID string, inviteeStatus string) {
-	<div>
-		<button
-			hx-get={ "/inv/" + invitationID + "/accept" }
-			hx-target="#accept_status"
-			if inviteeStatus=="accepted" {
-				disabled
-			}
-		>
-			Accept
-		</button>
-		<button
-			hx-get={ "/inv/" + invitationID + "/decline" }
-			hx-target="#accept_status"
-			if inviteeStatus=="declined" {
-				disabled
-			}
-			if inviteeStatus=="accepted" {
-				hx-confirm="You've accepted the invitation before, are you sure you want to decline now?"
-			}
-			
-		>
-			Decline
-		</button>
-	</div>
-}
-
-templ StatusCheck(status string) {
-	switch status {
-		case "waiting":
-			You haven't confirm this invitation
-		case "accepted":
-			You accepted the invitation
-		case "declined":
-			You declined the invitation
-	}
+templ ResponseButton(inviteeID string, response string, disable bool) {
+	<button
+		hx-put={ "/inv/" + inviteeID + "/" + response }
+		hx-target="#responseBox"
+		if disable {
+			disabled
+		}
+		hx-confirm="Are you sure?"
+	>{ response }</button>
 }
