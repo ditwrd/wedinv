@@ -48,7 +48,7 @@ func Execute() {
 			return nil
 		})
 		e.Router.RouteNotFound("/*", func(c echo.Context) error {
-			c.Redirect(http.StatusTemporaryRedirect, "/missing")
+			c.Redirect(http.StatusTemporaryRedirect, "/notfound")
 			return nil
 		})
 
