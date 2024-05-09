@@ -15,6 +15,7 @@ templ header() {
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" integrity="sha384-7P0NVe9LPDbUCAF+fH2R8Egwz1uqNH83Ns/bfJY0fN2XCDBMUI2S9gGzIOIRBKsA" crossorigin="anonymous"/>
 		<link rel="stylesheet" href="/public/styles.css"/>
+		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 	</head>
 }
 
@@ -31,10 +32,13 @@ templ Index(invitee models.Invitee) {
 				</section>
 				<section id="response">
 					<h2>Response Box</h2>
-					@ResponseStatus(invitee.Status)
-					<div class="grid">
-						@ResponseButton(invitee.ID, "accept", invitee.Status == "accepted")
-						@ResponseButton(invitee.ID, "decline", invitee.Status == "declined")
+					<div>
+						@ResponseStatus(invitee.Status)
+						<div class="grid">
+							@ResponseButton(invitee.ID, "accept", invitee.Status, invitee.Status == "accepted")
+							@ResponseButton(invitee.ID, "decline", invitee.Status, invitee.Status == "declined")
+						</div>
+						<article id="spinner" class="htmx-indicator" aria-busy="true">Saving Response 💾</article>
 					</div>
 				</section>
 			</main>
@@ -74,15 +78,57 @@ templ ResponseStatus(inviteeStatus string) {
 	</b>
 }
 
-templ ResponseButton(inviteeID string, response string, disable bool) {
+script ResponseNotification(prevStatus string, targetStatus string) {
+	String.prototype.format = function() {
+	    return [...arguments].reduce((p, c) => p.replace(/%s/, c), this);
+	};
+	Swal.fire({
+	    icon: 'question',
+	    title: 'Confirm',
+	    text: "You previously %s the invitation, proceed to %s the invitation?".format(prevStatus, targetStatus),
+	    showCancelButton: true,
+	}).then(
+	    (result) => {
+	        if (result.isConfirmed) {
+	            Swal.fire({
+	                icon: 'success',
+	                title: 'Response Saved 💾',
+	                showConfirmButton: false,
+	                timer: 1500
+	            });
+	            htmx.trigger('#%s-button'.format(targetStatus), 'confirmed-%s'.format(targetStatus));
+	        } else {
+	            Swal.fire({
+	                icon: 'info',
+	                title: 'Response Not Saved 🚫',
+	                showConfirmButton: false,
+	                timer: 1500
+	            });
+
+	        }
+	    }
+	)
+}
+
+templ ResponseButton(inviteeID string, targetStatus string, prevStatus string, disable bool) {
 	<button
-		id={ response + "-button" }
+		if targetStatus=="accept" {
+			class="primary"
+		}
+		if targetStatus=="decline" {
+			class="secondary"
+		}
+		id={ targetStatus + "-button" }
 		hx-swap-oob="outerHTML"
-		hx-put={ "/inv/" + inviteeID + "/" + response }
+		hx-put={ "/inv/" + inviteeID + "/" + targetStatus }
 		hx-target="#status"
 		hx-swap="outerHTML"
 		if disable {
 			disabled
 		}
-	>{ cases.Title(language.English, cases.Compact).String(response) }</button>
+		if prevStatus != "waiting" {
+			hx-trigger={ "confirmed-" + targetStatus }
+			onclick={ ResponseNotification(prevStatus, targetStatus) }
+		}
+	>{ cases.Title(language.English, cases.Compact).String(targetStatus) }</button>
 }

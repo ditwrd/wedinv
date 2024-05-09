@@ -43,8 +43,11 @@ func NewInviteeService(dao *daos.Dao) inviteeService {
 }
 
 func Render(ctx echo.Context, status int, t templ.Component) error {
-	ctx.Response().Writer.WriteHeader(status)
-	ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
+	if status != -1 {
+		ctx.Response().Writer.WriteHeader(status)
+		ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
+
+	}
 	return t.Render(ctx.Request().Context(), ctx.Response().Writer)
 }
 
@@ -73,36 +76,28 @@ func (i inviteeService) FindInvitation(ctx echo.Context) error {
 	return Render(ctx, http.StatusOK, template.Index(invitee))
 }
 
-type Response struct {
-	Status string
-}
-
-func (r Response) ButtonName() string {
-	responseMap := map[string]string{
-		"accepted": "accept",
-		"declined": "decline",
-	}
-	return responseMap[r.Status]
-}
-
-func (r Response) ReverseButtonName() string {
-	responseMap := map[string]string{
-		"accepted": "decline",
-		"declined": "accept",
-	}
-	return responseMap[r.Status]
-}
-
-func (i inviteeService) updateStatusHandler(ctx echo.Context, status string) error {
+func (i inviteeService) updateStatusHandler(ctx echo.Context, targetStatus string) error {
 	invitationID := ctx.PathParam("invitationID")
 	if !i.validateInvitationID(invitationID) {
 		ctx.Redirect(http.StatusTemporaryRedirect, "/notfound")
 		return errors.New("invalid invitation ID")
 	}
-	err := i.dao.RunInTransaction(func(txDao *daos.Dao) error {
-		_, err := txDao.DB().
+
+	invitee := models.Invitee{}
+	err := i.dao.DB().
+		NewQuery("select status from invitee where id={:invitationID} limit 1").
+		Bind(dbx.Params{"invitationID": invitationID}).
+		One(&invitee)
+	if err != nil {
+		ctx.Redirect(http.StatusTemporaryRedirect, "/notfound")
+		return err
+	}
+	prevStatus := invitee.Status
+
+	err = i.dao.RunInTransaction(func(txDao *daos.Dao) error {
+		_, err = txDao.DB().
 			NewQuery("update invitee set status={:status} where invitee.id={:invitationID}").
-			Bind(dbx.Params{"invitationID": invitationID, "status": status}).Execute()
+			Bind(dbx.Params{"invitationID": invitationID, "status": targetStatus}).Execute()
 		return err
 	})
 	if err != nil {
@@ -110,11 +105,11 @@ func (i inviteeService) updateStatusHandler(ctx echo.Context, status string) err
 		return err
 	}
 
-	response := Response{Status: status}
+	targetResponse := models.Response{Status: targetStatus}
 
-	Render(ctx, http.StatusOK, template.ResponseButton(invitationID, response.ButtonName(), true))
-	Render(ctx, http.StatusOK, template.ResponseButton(invitationID, response.ReverseButtonName(), false))
-	return Render(ctx, http.StatusOK, template.ResponseStatus(status))
+	Render(ctx, -1, template.ResponseButton(invitationID, targetResponse.ButtonName(), prevStatus, true))
+	Render(ctx, -1, template.ResponseButton(invitationID, targetResponse.ReverseButtonName(), prevStatus, false))
+	return Render(ctx, http.StatusOK, template.ResponseStatus(targetStatus))
 }
 
 func (i inviteeService) AcceptInvitation(ctx echo.Context) error {

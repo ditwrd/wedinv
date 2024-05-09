@@ -28,3 +28,23 @@ type Invitee struct {
 	Status    string `db:"status" json:"status"`
 	InvitedBy string `db:"invited_by" json:"invited_by"`
 }
+
+type Response struct {
+	Status string
+}
+
+func (r Response) ButtonName() string {
+	responseMap := map[string]string{
+		"accepted": "accept",
+		"declined": "decline",
+	}
+	return responseMap[r.Status]
+}
+
+func (r Response) ReverseButtonName() string {
+	responseMap := map[string]string{
+		"accepted": "decline",
+		"declined": "accept",
+	}
+	return responseMap[r.Status]
+}
