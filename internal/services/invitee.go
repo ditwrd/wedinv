@@ -42,7 +42,7 @@ func NewInviteeService(dao *daos.Dao) inviteeService {
 	return inviteeService{dao: dao}
 }
 
-func (i inviteeService) render(ctx echo.Context, status int, t templ.Component) error {
+func Render(ctx echo.Context, status int, t templ.Component) error {
 	ctx.Response().Writer.WriteHeader(status)
 	ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
 	return t.Render(ctx.Request().Context(), ctx.Response().Writer)
@@ -70,7 +70,27 @@ func (i inviteeService) FindInvitation(ctx echo.Context) error {
 		return err
 	}
 
-	return i.render(ctx, http.StatusOK, template.Index(invitee))
+	return Render(ctx, http.StatusOK, template.Index(invitee))
+}
+
+type Response struct {
+	Status string
+}
+
+func (r Response) ButtonName() string {
+	responseMap := map[string]string{
+		"accepted": "accept",
+		"declined": "decline",
+	}
+	return responseMap[r.Status]
+}
+
+func (r Response) ReverseButtonName() string {
+	responseMap := map[string]string{
+		"accepted": "decline",
+		"declined": "accept",
+	}
+	return responseMap[r.Status]
 }
 
 func (i inviteeService) updateStatusHandler(ctx echo.Context, status string) error {
@@ -89,7 +109,12 @@ func (i inviteeService) updateStatusHandler(ctx echo.Context, status string) err
 		ctx.Redirect(http.StatusTemporaryRedirect, "/notfound")
 		return err
 	}
-	return i.render(ctx, http.StatusOK, template.StatusResponseBox(status, invitationID))
+
+	response := Response{Status: status}
+
+	Render(ctx, http.StatusOK, template.ResponseButton(invitationID, response.ButtonName(), true))
+	Render(ctx, http.StatusOK, template.ResponseButton(invitationID, response.ReverseButtonName(), false))
+	return Render(ctx, http.StatusOK, template.ResponseStatus(status))
 }
 
 func (i inviteeService) AcceptInvitation(ctx echo.Context) error {

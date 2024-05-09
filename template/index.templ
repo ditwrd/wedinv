@@ -30,7 +30,12 @@ templ Index(invitee models.Invitee) {
 					@Invitation()
 				</section>
 				<section id="response">
-					@StatusResponseBox(invitee.Status, invitee.ID)
+					<h2>Response Box</h2>
+					@ResponseStatus(invitee.Status)
+					<div class="grid">
+						@ResponseButton(invitee.ID, "accept", invitee.Status == "accepted")
+						@ResponseButton(invitee.ID, "decline", invitee.Status == "declined")
+					</div>
 				</section>
 			</main>
 		</body>
@@ -55,9 +60,8 @@ templ Invitation() {
 	</p>
 }
 
-templ StatusResponseBox(inviteeStatus string, inviteeID string) {
-	<h2>Response Box</h2>
-	<b>
+templ ResponseStatus(inviteeStatus string) {
+	<b id="status">
 		if inviteeStatus=="waiting" {
 			You haven't response to this invitation, please fill it soon!
 		}
@@ -68,19 +72,17 @@ templ StatusResponseBox(inviteeStatus string, inviteeID string) {
 			You've declined this invitation, we hope we can see you soon!
 		}
 	</b>
-	<div class="grid">
-		@ResponseButton(inviteeID, "accept", inviteeStatus == "accepted")
-		@ResponseButton(inviteeID, "decline", inviteeStatus == "declined")
-	</div>
 }
 
 templ ResponseButton(inviteeID string, response string, disable bool) {
 	<button
+		id={ response + "-button" }
+		hx-swap-oob="outerHTML"
 		hx-put={ "/inv/" + inviteeID + "/" + response }
-		hx-target="#response"
+		hx-target="#status"
+		hx-swap="outerHTML"
 		if disable {
 			disabled
 		}
-		hx-confirm="Are you sure?"
 	>{ cases.Title(language.English, cases.Compact).String(response) }</button>
 }
