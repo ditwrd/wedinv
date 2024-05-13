@@ -12,10 +12,11 @@ templ header() {
 		<meta charset="utf-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1"/>
 		<script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" integrity="sha384-nC6js/7nueXYqVy5QvUz21LcauL8wj6GAMkBVFCf69e0amHAisT/scE6sWLH7Nkn" crossorigin="anonymous"></script>
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" integrity="sha384-7P0NVe9LPDbUCAF+fH2R8Egwz1uqNH83Ns/bfJY0fN2XCDBMUI2S9gGzIOIRBKsA" crossorigin="anonymous"/>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css" integrity="sha256-3yC5GBT2WZMADvGy+qBVi9glN1R2Xr2164ImZ9RPsU0= sha384-Dw2+3qpObGzez20CmU3AMW9GY+Cin5hHaVmupE+SaONsNUANucjrAJ8gLpjHMLXh sha512-kebV+zuKVBT1LO9jpnHDFD7Q7dp485tN+vlPrMdXW2qwXZkyS8pPS8jZj5iV/7pisGoXljrqTbl1aencLVtkGA==" crossorigin="anonymous"/>
 		<link rel="stylesheet" href="/public/styles.css"/>
-		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 	</head>
 }
 
@@ -78,7 +79,7 @@ templ ResponseStatus(inviteeStatus string) {
 	</b>
 }
 
-script ResponseNotification(prevStatus string, targetStatus string) {
+script ResponseNotificationConfirm(prevStatus string, targetStatus string) {
 	String.prototype.format = function() {
 	    return [...arguments].reduce((p, c) => p.replace(/%s/, c), this);
 	};
@@ -87,16 +88,18 @@ script ResponseNotification(prevStatus string, targetStatus string) {
 	    title: 'Confirm',
 	    text: "You previously %s the invitation, proceed to %s the invitation?".format(prevStatus, targetStatus),
 	    showCancelButton: true,
+	    confirmButtonText: 'Yes, I %s the invitation'.format(targetStatus),
+	    cancelButtonText: 'No, cancel my response',
 	}).then(
 	    (result) => {
 	        if (result.isConfirmed) {
+	            htmx.trigger('#%s-button'.format(targetStatus), 'confirmed-%s'.format(targetStatus));
 	            Swal.fire({
 	                icon: 'success',
 	                title: 'Response Saved 💾',
 	                showConfirmButton: false,
 	                timer: 1500
 	            });
-	            htmx.trigger('#%s-button'.format(targetStatus), 'confirmed-%s'.format(targetStatus));
 	        } else {
 	            Swal.fire({
 	                icon: 'info',
@@ -106,8 +109,9 @@ script ResponseNotification(prevStatus string, targetStatus string) {
 	            });
 
 	        }
-	    }
-	)
+	}
+
+)
 }
 
 templ ResponseButton(inviteeID string, targetStatus string, prevStatus string, disable bool) {
@@ -128,7 +132,7 @@ templ ResponseButton(inviteeID string, targetStatus string, prevStatus string, d
 		}
 		if prevStatus != "waiting" {
 			hx-trigger={ "confirmed-" + targetStatus }
-			onclick={ ResponseNotification(prevStatus, targetStatus) }
+			onclick={ ResponseNotificationConfirm(prevStatus, targetStatus) }
 		}
 	>{ cases.Title(language.English, cases.Compact).String(targetStatus) }</button>
 }
