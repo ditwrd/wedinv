@@ -26,8 +26,11 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-func Render(ctx echo.Context, statusCode int, t templ.Component) error {
-	ctx.Response().Writer.WriteHeader(statusCode)
-	ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
+func Render(ctx echo.Context, status int, t templ.Component) error {
+	if status != -1 {
+		ctx.Response().Writer.WriteHeader(status)
+		ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
+
+	}
 	return t.Render(ctx.Request().Context(), ctx.Response().Writer)
 }

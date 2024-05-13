@@ -70,7 +70,7 @@ func (i inviteeService) FindInvitation(ctx echo.Context) error {
 		return err
 	}
 
-	return Render(ctx, http.StatusOK, template.Index(invitee))
+	return template.Render(ctx, http.StatusOK, template.Index(invitee))
 }
 
 func (i inviteeService) ConfirmInvitation(ctx echo.Context) error {
@@ -100,7 +100,7 @@ func (i inviteeService) ConfirmInvitation(ctx echo.Context) error {
 		return err
 	}
 
-	Render(ctx, -1, template.AnswerButton(confirmRequest.ID, "accept", confirmRequest.Answer))
-	Render(ctx, -1, template.AnswerButton(confirmRequest.ID, "decline", confirmRequest.Answer))
-	return Render(ctx, http.StatusOK, template.InvitationStatus(confirmRequest.Answer))
+	template.Render(ctx, -1, template.AnswerButton(confirmRequest.ID, "accept", confirmRequest.Answer))
+	template.Render(ctx, -1, template.AnswerButton(confirmRequest.ID, "decline", confirmRequest.Answer))
+	return template.Render(ctx, http.StatusOK, template.InvitationStatus(confirmRequest.Answer))
 }
