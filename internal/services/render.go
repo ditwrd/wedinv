@@ -19,19 +19,18 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-package models
+package services
 
-type Invitee struct {
-	ID        string `db:"id" json:"id" validate:"required,alphanum,len=15"`
-	Name      string `db:"name" json:"name"`
-	Phone     string `db:"phone" json:"phone"`
-	Status    string `db:"status" json:"status" validate:"oneof=accept decline waiting"`
-	InvitedBy string `db:"invited_by" json:"invited_by" validate:"oneof=groom bride groom_bride"`
-}
-type FindInvitationRequest struct {
-	ID string `param:"id" validate:"required,alphanum,len=15"`
-}
-type ConfirmInvitationRequest struct {
-	ID     string `param:"id" validate:"required,alphanum,len=15"`
-	Answer string `form:"answer" validate:"required,oneof=accept decline"`
+import (
+	"github.com/a-h/templ"
+	"github.com/labstack/echo/v5"
+)
+
+func Render(ctx echo.Context, status int, t templ.Component) error {
+	if status != -1 {
+		ctx.Response().Writer.WriteHeader(status)
+		ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
+
+	}
+	return t.Render(ctx.Request().Context(), ctx.Response().Writer)
 }

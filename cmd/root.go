@@ -38,7 +38,6 @@ func Execute() {
 
 	migratecmd.MustRegister(pb, pb.RootCmd, migratecmd.Config{
 		Automigrate: true,
-		Dir:         "/migrations",
 	})
 
 	pb.OnBeforeServe().Add(func(e *core.ServeEvent) error {
@@ -55,9 +54,8 @@ func Execute() {
 		inviteeService := services.NewInviteeService(pb.Dao())
 
 		baseRouter := e.Router.Group("/inv")
-		baseRouter.GET("/:invitationID", inviteeService.FindInvitation)
-		baseRouter.PUT("/:invitationID/accept", inviteeService.AcceptInvitation)
-		baseRouter.PUT("/:invitationID/decline", inviteeService.DeclineInvitation)
+		baseRouter.GET("/:id", inviteeService.FindInvitation)
+		baseRouter.PUT("/:id/confirm", inviteeService.ConfirmInvitation)
 
 		return nil
 	})

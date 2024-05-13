@@ -4,6 +4,8 @@ import (
 	"github.com/ditwrd/wedinv/internal/models"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"fmt"
+	"encoding/json"
 )
 
 templ header() {
@@ -12,9 +14,7 @@ templ header() {
 		<meta charset="utf-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1"/>
 		<script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
-		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" integrity="sha384-nC6js/7nueXYqVy5QvUz21LcauL8wj6GAMkBVFCf69e0amHAisT/scE6sWLH7Nkn" crossorigin="anonymous"></script>
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" integrity="sha384-7P0NVe9LPDbUCAF+fH2R8Egwz1uqNH83Ns/bfJY0fN2XCDBMUI2S9gGzIOIRBKsA" crossorigin="anonymous"/>
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css" integrity="sha256-3yC5GBT2WZMADvGy+qBVi9glN1R2Xr2164ImZ9RPsU0= sha384-Dw2+3qpObGzez20CmU3AMW9GY+Cin5hHaVmupE+SaONsNUANucjrAJ8gLpjHMLXh sha512-kebV+zuKVBT1LO9jpnHDFD7Q7dp485tN+vlPrMdXW2qwXZkyS8pPS8jZj5iV/7pisGoXljrqTbl1aencLVtkGA==" crossorigin="anonymous"/>
 		<link rel="stylesheet" href="/public/styles.css"/>
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 	</head>
@@ -34,10 +34,10 @@ templ Index(invitee models.Invitee) {
 				<section id="response">
 					<h2>Response Box</h2>
 					<div>
-						@ResponseStatus(invitee.Status)
+						@InvitationStatus(invitee.Status)
 						<div class="grid">
-							@ResponseButton(invitee.ID, "accept", invitee.Status, invitee.Status == "accepted")
-							@ResponseButton(invitee.ID, "decline", invitee.Status, invitee.Status == "declined")
+							@AnswerButton(invitee.ID, "accept", invitee.Status)
+							@AnswerButton(invitee.ID, "decline", invitee.Status)
 						</div>
 						<article id="spinner" class="htmx-indicator" aria-busy="true">Saving Response 💾</article>
 					</div>
@@ -65,74 +65,47 @@ templ Invitation() {
 	</p>
 }
 
-templ ResponseStatus(inviteeStatus string) {
+templ InvitationStatus(inviteeStatus string) {
 	<b id="status">
-		if inviteeStatus=="waiting" {
-			You haven't response to this invitation, please fill it soon!
-		}
-		if inviteeStatus=="accepted" {
-			You've accepted this invitation, see you soon!
-		}
-		if inviteeStatus=="declined" {
-			You've declined this invitation, we hope we can see you soon!
+		switch inviteeStatus {
+			case "waiting" :
+				You haven't response to this invitation, please fill it soon!
+			case "accept" :
+				You've accepted this invitation, see you soon!
+			case "decline":
+				You've declined this invitation, we hope we can see you soon!
 		}
 	</b>
 }
 
-script ResponseNotificationConfirm(prevStatus string, targetStatus string) {
-	String.prototype.format = function() {
-	    return [...arguments].reduce((p, c) => p.replace(/%s/, c), this);
-	};
-	Swal.fire({
-	    icon: 'question',
-	    title: 'Confirm',
-	    text: "You previously %s the invitation, proceed to %s the invitation?".format(prevStatus, targetStatus),
-	    showCancelButton: true,
-	    confirmButtonText: 'Yes, I %s the invitation'.format(targetStatus),
-	    cancelButtonText: 'No, cancel my response',
-	}).then(
-	    (result) => {
-	        if (result.isConfirmed) {
-	            htmx.trigger('#%s-button'.format(targetStatus), 'confirmed-%s'.format(targetStatus));
-	            Swal.fire({
-	                icon: 'success',
-	                title: 'Response Saved 💾',
-	                showConfirmButton: false,
-	                timer: 1500
-	            });
-	        } else {
-	            Swal.fire({
-	                icon: 'info',
-	                title: 'Response Not Saved 🚫',
-	                showConfirmButton: false,
-	                timer: 1500
-	            });
-
-	        }
+func createAnswerJson(answer string) string {
+	data := map[string]string{
+		"answer": answer,
 	}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	return string(jsonData)
 
-)
 }
 
-templ ResponseButton(inviteeID string, targetStatus string, prevStatus string, disable bool) {
+templ AnswerButton(inviteeID string, answer string, prevStatus string) {
 	<button
-		if targetStatus=="accept" {
+		if answer=="accept" {
 			class="primary"
 		}
-		if targetStatus=="decline" {
+		if answer=="decline" {
 			class="secondary"
 		}
-		id={ targetStatus + "-button" }
-		hx-swap-oob="outerHTML"
-		hx-put={ "/inv/" + inviteeID + "/" + targetStatus }
+		id={ fmt.Sprintf("%s-button", answer) }
+		hx-put={ fmt.Sprintf("/inv/%s/confirm", inviteeID) }
 		hx-target="#status"
 		hx-swap="outerHTML"
-		if disable {
+		hx-vals={ createAnswerJson(answer) }
+		hx-swap-oob="outerHTML"
+		if prevStatus == answer {
 			disabled
 		}
-		if prevStatus != "waiting" {
-			hx-trigger={ "confirmed-" + targetStatus }
-			onclick={ ResponseNotificationConfirm(prevStatus, targetStatus) }
-		}
-	>{ cases.Title(language.English, cases.Compact).String(targetStatus) }</button>
+	>{ cases.Title(language.English, cases.Compact).String(answer) }</button>
 }

@@ -11,6 +11,8 @@ import "io"
 import "bytes"
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/ditwrd/wedinv/internal/models"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -29,7 +31,7 @@ func header() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<head><title>WedInv</title><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><script src=\"https://unpkg.com/htmx.org@1.9.12\" integrity=\"sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2\" crossorigin=\"anonymous\"></script><script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\" integrity=\"sha384-nC6js/7nueXYqVy5QvUz21LcauL8wj6GAMkBVFCf69e0amHAisT/scE6sWLH7Nkn\" crossorigin=\"anonymous\"></script><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css\" integrity=\"sha384-7P0NVe9LPDbUCAF+fH2R8Egwz1uqNH83Ns/bfJY0fN2XCDBMUI2S9gGzIOIRBKsA\" crossorigin=\"anonymous\"><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css\" integrity=\"sha256-3yC5GBT2WZMADvGy+qBVi9glN1R2Xr2164ImZ9RPsU0= sha384-Dw2+3qpObGzez20CmU3AMW9GY+Cin5hHaVmupE+SaONsNUANucjrAJ8gLpjHMLXh sha512-kebV+zuKVBT1LO9jpnHDFD7Q7dp485tN+vlPrMdXW2qwXZkyS8pPS8jZj5iV/7pisGoXljrqTbl1aencLVtkGA==\" crossorigin=\"anonymous\"><link rel=\"stylesheet\" href=\"/public/styles.css\"><link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\"></head>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<head><title>WedInv</title><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><script src=\"https://unpkg.com/htmx.org@1.9.12\" integrity=\"sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2\" crossorigin=\"anonymous\"></script><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css\" integrity=\"sha384-7P0NVe9LPDbUCAF+fH2R8Egwz1uqNH83Ns/bfJY0fN2XCDBMUI2S9gGzIOIRBKsA\" crossorigin=\"anonymous\"><link rel=\"stylesheet\" href=\"/public/styles.css\"><link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\"></head>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -81,7 +83,7 @@ func Index(invitee models.Invitee) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = ResponseStatus(invitee.Status).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = InvitationStatus(invitee.Status).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -89,11 +91,11 @@ func Index(invitee models.Invitee) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = ResponseButton(invitee.ID, "accept", invitee.Status, invitee.Status == "accepted").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = AnswerButton(invitee.ID, "accept", invitee.Status).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = ResponseButton(invitee.ID, "decline", invitee.Status, invitee.Status == "declined").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = AnswerButton(invitee.ID, "decline", invitee.Status).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -182,7 +184,7 @@ func Invitation() templ.Component {
 	})
 }
 
-func ResponseStatus(inviteeStatus string) templ.Component {
+func InvitationStatus(inviteeStatus string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -199,19 +201,18 @@ func ResponseStatus(inviteeStatus string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if inviteeStatus == "waiting" {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("You haven't response to this invitation, please fill it soon! ")
+		switch inviteeStatus {
+		case "waiting":
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("You haven't response to this invitation, please fill it soon!")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-		}
-		if inviteeStatus == "accepted" {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("You've accepted this invitation, see you soon! ")
+		case "accept":
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("You've accepted this invitation, see you soon!")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-		}
-		if inviteeStatus == "declined" {
+		case "decline":
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("You've declined this invitation, we hope we can see you soon!")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -228,48 +229,19 @@ func ResponseStatus(inviteeStatus string) templ.Component {
 	})
 }
 
-func ResponseNotificationConfirm(prevStatus string, targetStatus string) templ.ComponentScript {
-	return templ.ComponentScript{
-		Name: `__templ_ResponseNotificationConfirm_4673`,
-		Function: `function __templ_ResponseNotificationConfirm_4673(prevStatus, targetStatus){String.prototype.format = function() {
-	    return [...arguments].reduce((p, c) => p.replace(/%s/, c), this);
-	};
-	Swal.fire({
-	    icon: 'question',
-	    title: 'Confirm',
-	    text: "You previously %s the invitation, proceed to %s the invitation?".format(prevStatus, targetStatus),
-	    showCancelButton: true,
-	    confirmButtonText: 'Yes, I %s the invitation'.format(targetStatus),
-	    cancelButtonText: 'No, cancel my response',
-	}).then(
-	    (result) => {
-	        if (result.isConfirmed) {
-	            htmx.trigger('#%s-button'.format(targetStatus), 'confirmed-%s'.format(targetStatus));
-	            Swal.fire({
-	                icon: 'success',
-	                title: 'Response Saved 💾',
-	                showConfirmButton: false,
-	                timer: 1500
-	            });
-	        } else {
-	            Swal.fire({
-	                icon: 'info',
-	                title: 'Response Not Saved 🚫',
-	                showConfirmButton: false,
-	                timer: 1500
-	            });
-
-	        }
+func createAnswerJson(answer string) string {
+	data := map[string]string{
+		"answer": answer,
 	}
-
-)
-}`,
-		Call:       templ.SafeScript(`__templ_ResponseNotificationConfirm_4673`, prevStatus, targetStatus),
-		CallInline: templ.SafeScriptInline(`__templ_ResponseNotificationConfirm_4673`, prevStatus, targetStatus),
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error:", err)
 	}
+	return string(jsonData)
+
 }
 
-func ResponseButton(inviteeID string, targetStatus string, prevStatus string, disable bool) templ.Component {
+func AnswerButton(inviteeID string, answer string, prevStatus string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -282,21 +254,17 @@ func ResponseButton(inviteeID string, targetStatus string, prevStatus string, di
 			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_Buffer, ResponseNotificationConfirm(prevStatus, targetStatus))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<button")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if targetStatus == "accept" {
+		if answer == "accept" {
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" class=\"primary\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		if targetStatus == "decline" {
+		if answer == "decline" {
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" class=\"secondary\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -307,61 +275,46 @@ func ResponseButton(inviteeID string, targetStatus string, prevStatus string, di
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var9 string
-		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(targetStatus + "-button")
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s-button", answer))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `template/index.templ`, Line: 125, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `template/index.templ`, Line: 101, Col: 39}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-swap-oob=\"outerHTML\" hx-put=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-put=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var10 string
-		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs("/inv/" + inviteeID + "/" + targetStatus)
+		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/inv/%s/confirm", inviteeID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `template/index.templ`, Line: 127, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `template/index.templ`, Line: 102, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-target=\"#status\" hx-swap=\"outerHTML\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-target=\"#status\" hx-swap=\"outerHTML\" hx-vals=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if disable {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" disabled")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
+		var templ_7745c5c3_Var11 string
+		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(createAnswerJson(answer))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `template/index.templ`, Line: 105, Col: 36}
 		}
-		if prevStatus != "waiting" {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" hx-trigger=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var11 string
-			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs("confirmed-" + targetStatus)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `template/index.templ`, Line: 134, Col: 43}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" onclick=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var12 templ.ComponentScript = ResponseNotificationConfirm(prevStatus, targetStatus)
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12.Call)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-swap-oob=\"outerHTML\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if prevStatus == answer {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" disabled")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -370,12 +323,12 @@ func ResponseButton(inviteeID string, targetStatus string, prevStatus string, di
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var13 string
-		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(cases.Title(language.English, cases.Compact).String(targetStatus))
+		var templ_7745c5c3_Var12 string
+		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(cases.Title(language.English, cases.Compact).String(answer))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `template/index.templ`, Line: 137, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `template/index.templ`, Line: 110, Col: 63}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
