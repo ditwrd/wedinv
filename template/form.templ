@@ -1,0 +1,65 @@
+package template
+
+import (
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+	"fmt"
+	"encoding/json"
+	"github.com/ditwrd/wedinv/internal/models"
+	"github.com/go-playground/validator/v10"
+)
+
+var validate *validator.Validate = validator.New(validator.WithRequiredStructEnabled())
+
+templ InvitationStatus(inviteeStatus string) {
+	<b id="status">
+		switch inviteeStatus {
+			case "waiting" :
+				You haven't response to this invitation, please fill it soon!
+			case "accept" :
+				You've accepted this invitation, see you soon!
+			case "decline":
+				You've declined this invitation, we hope we can see you soon!
+		}
+	</b>
+}
+
+func createAnswerJson(id string, answer string) string {
+	answerReq := models.ConfirmInvitationRequest{
+		ID:     id,
+		Answer: answer,
+	}
+	err := validate.Struct(answerReq)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	data := map[string]string{
+		"answer": answerReq.Answer,
+	}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	return string(jsonData)
+
+}
+
+templ AnswerButton(id string, answer string, prevStatus string) {
+	<button
+		if answer=="accept" {
+			class="primary"
+		}
+		if answer=="decline" {
+			class="secondary"
+		}
+		id={ fmt.Sprintf("%s-button", answer) }
+		hx-put={ fmt.Sprintf("/inv/%s/confirm", id) }
+		hx-target="#status"
+		hx-swap="outerHTML"
+		hx-vals={ createAnswerJson(id, answer) }
+		hx-swap-oob="outerHTML"
+		if prevStatus == answer {
+			disabled
+		}
+	>{ cases.Title(language.English, cases.Compact).String(answer) }</button>
+}

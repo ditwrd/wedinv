@@ -2,10 +2,6 @@ package template
 
 import (
 	"github.com/ditwrd/wedinv/internal/models"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-	"fmt"
-	"encoding/json"
 )
 
 templ header() {
@@ -31,7 +27,7 @@ templ Index(invitee models.Invitee) {
 				<section>
 					@Invitation()
 				</section>
-				<section id="response">
+				<section>
 					<h2>Response Box</h2>
 					<div>
 						@InvitationStatus(invitee.Status)
@@ -40,10 +36,15 @@ templ Index(invitee models.Invitee) {
 							@AnswerButton(invitee.ID, "decline", invitee.Status)
 						</div>
 						<article id="spinner" class="htmx-indicator" aria-busy="true">Saving Response 💾</article>
+						<button class="contrast" data-target="modal-example" onclick="toggleModal(event)">
+							Launch demo modal
+						</button>
 					</div>
 				</section>
 			</main>
 		</body>
+		@dialog()
+		@modalscript()
 	</html>
 }
 
@@ -54,58 +55,4 @@ templ InviteeWelcome(inviteeName string, status string, invitedBy string) {
 	<p>
 		Hello { inviteeName }, you are invited by { invitedBy }
 	</p>
-}
-
-templ Invitation() {
-	<h2>
-		Invitation Box
-	</h2>
-	<p>
-		This is the invitation
-	</p>
-}
-
-templ InvitationStatus(inviteeStatus string) {
-	<b id="status">
-		switch inviteeStatus {
-			case "waiting" :
-				You haven't response to this invitation, please fill it soon!
-			case "accept" :
-				You've accepted this invitation, see you soon!
-			case "decline":
-				You've declined this invitation, we hope we can see you soon!
-		}
-	</b>
-}
-
-func createAnswerJson(answer string) string {
-	data := map[string]string{
-		"answer": answer,
-	}
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	return string(jsonData)
-
-}
-
-templ AnswerButton(inviteeID string, answer string, prevStatus string) {
-	<button
-		if answer=="accept" {
-			class="primary"
-		}
-		if answer=="decline" {
-			class="secondary"
-		}
-		id={ fmt.Sprintf("%s-button", answer) }
-		hx-put={ fmt.Sprintf("/inv/%s/confirm", inviteeID) }
-		hx-target="#status"
-		hx-swap="outerHTML"
-		hx-vals={ createAnswerJson(answer) }
-		hx-swap-oob="outerHTML"
-		if prevStatus == answer {
-			disabled
-		}
-	>{ cases.Title(language.English, cases.Compact).String(answer) }</button>
 }

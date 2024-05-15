@@ -23,3 +23,4 @@ go.work
 pb_data
 tmp
 main
+*_templ.go
