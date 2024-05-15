@@ -22,10 +22,10 @@ THE SOFTWARE.
 package models
 
 type Invitee struct {
-	ID        string `db:"id" json:"id" validate:"required,alphanum,len=15"`
-	Name      string `db:"name" json:"name"`
-	Phone     string `db:"phone" json:"phone"`
-	Status    string `db:"status" json:"status" validate:"oneof=accept decline waiting"`
+	ID        string `db:"id"         json:"id"         validate:"required,alphanum,len=15"`
+	Name      string `db:"name"       json:"name"`
+	Phone     string `db:"phone"      json:"phone"`
+	Status    string `db:"status"     json:"status"     validate:"oneof=accept decline waiting"`
 	InvitedBy string `db:"invited_by" json:"invited_by" validate:"oneof=groom bride groom_bride"`
 }
 type FindInvitationRequest struct {
@@ -33,5 +33,5 @@ type FindInvitationRequest struct {
 }
 type ConfirmInvitationRequest struct {
 	ID     string `param:"id" validate:"required,alphanum,len=15"`
-	Answer string `form:"answer" validate:"required,oneof=accept decline"`
+	Answer string `           validate:"required,oneof=accept decline" form:"answer"`
 }

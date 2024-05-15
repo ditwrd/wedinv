@@ -22,7 +22,7 @@ templ Index(invitee models.Invitee) {
 		<body>
 			<main class="container">
 				<section>
-					@InviteeWelcome(invitee.Name, invitee.Status, invitee.InvitedBy)
+					@InviteeWelcome(invitee)
 				</section>
 				<section>
 					@Invitation()
@@ -48,11 +48,11 @@ templ Index(invitee models.Invitee) {
 	</html>
 }
 
-templ InviteeWelcome(inviteeName string, status string, invitedBy string) {
+templ InviteeWelcome(invitee models.Invitee) {
 	<h1>
 		Wedding Invitation
 	</h1>
 	<p>
-		Hello { inviteeName }, you are invited by { invitedBy }
+		Hello { invitee.Name }, you are invited by { invitee.InvitedBy }
 	</p>
 }

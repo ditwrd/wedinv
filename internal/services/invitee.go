@@ -92,7 +92,8 @@ func (i inviteeService) ConfirmInvitation(ctx echo.Context) error {
 	err = i.dao.RunInTransaction(func(txDao *daos.Dao) error {
 		_, err = txDao.DB().
 			NewQuery("update invitee set status={:status} where invitee.id={:invitationID}").
-			Bind(dbx.Params{"invitationID": confirmRequest.ID, "status": confirmRequest.Answer}).Execute()
+			Bind(dbx.Params{"invitationID": confirmRequest.ID, "status": confirmRequest.Answer}).
+			Execute()
 		return err
 	})
 	if err != nil {
@@ -100,7 +101,15 @@ func (i inviteeService) ConfirmInvitation(ctx echo.Context) error {
 		return err
 	}
 
-	template.Render(ctx, -1, template.AnswerButton(confirmRequest.ID, "accept", confirmRequest.Answer))
-	template.Render(ctx, -1, template.AnswerButton(confirmRequest.ID, "decline", confirmRequest.Answer))
+	template.Render(
+		ctx,
+		-1,
+		template.AnswerButton(confirmRequest.ID, "accept", confirmRequest.Answer),
+	)
+	template.Render(
+		ctx,
+		-1,
+		template.AnswerButton(confirmRequest.ID, "decline", confirmRequest.Answer),
+	)
 	return template.Render(ctx, http.StatusOK, template.InvitationStatus(confirmRequest.Answer))
 }
