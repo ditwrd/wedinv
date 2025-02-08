@@ -2,7 +2,10 @@ module github.com/ditwrd/wedinv
 
 go 1.23.3
 
-require github.com/pocketbase/pocketbase v0.25.0
+require (
+	github.com/a-h/templ v0.3.833
+	github.com/pocketbase/pocketbase v0.25.0
+)
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
