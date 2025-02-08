@@ -8,5 +8,5 @@ import (
 func Home(e *core.RequestEvent) error {
 	Req := e.Request.Context()
 	Res := e.Response
-	return components.Render(components.Home(), Req, Res)
+	return Render(components.Home(), Req, Res)
 }
