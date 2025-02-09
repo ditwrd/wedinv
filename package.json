@@ -4,13 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "pnpx @tailwindcss/cli -o internal/static/css/tailwind.css -m"
+    "build": "./node_modules/.bin/tailwindcss -i ./internal/static/css/style.css -o ./internal/static/css/tailwind.css -m"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@tailwindcss/cli": "^4.0.4",
-    "tailwindcss": "^4.0.4"
+    "tailwindcss": "3"
   }
 }
