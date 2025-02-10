@@ -1,0 +1,15 @@
+package components
+
+import "github.com/ditwrd/wedinv/internal/models"
+
+templ Invitation(invitee models.Invitee) {
+	<html lang="es" class="dark">
+		@header()
+		<div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-black to-white">
+			<div class="bg-white rounded-lg shadow-l p-8 m-4">
+				<h1 class="text-4xl text-gray-600 mb-2">Hello world</h1>
+				<p class="text-gray-600 ">Welcome to your application { invitee.Name } with id { invitee.ID }</p>
+			</div>
+		</div>
+	</html>
+}

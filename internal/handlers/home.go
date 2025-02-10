@@ -6,7 +6,7 @@ import (
 )
 
 func Home(e *core.RequestEvent) error {
-	Req := e.Request.Context()
-	Res := e.Response
-	return Render(components.Home(), Req, Res)
+	req := e.Request
+	res := e.Response
+	return Render(components.Home(), req.Context(), res)
 }

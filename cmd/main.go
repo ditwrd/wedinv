@@ -19,9 +19,12 @@ func main() {
 		Automigrate: true,
 	})
 
+	invitationHandler := handlers.NewInvitationHandler(app)
+
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		se.Router.GET("/{path...}", apis.Static(internal.StaticFiles, false))
 		se.Router.GET("/home", handlers.Home)
+		se.Router.GET("/inv/{id}", invitationHandler.GetInviteeData)
 
 		return se.Next()
 	})
